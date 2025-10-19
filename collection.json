@@ -1,0 +1,101 @@
+{
+  "info": {
+    "name": "ComuniArte - ContentController",
+    "_postman_id": "4c1e5d5c-ec23-4e92-a5b9-6c92eaf23951",
+    "description": "Colección de endpoints para gestionar contenidos en ComuniArte usando el ContentController.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Crear nuevo contenido",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"title\": \"Documental de la Comunidad Qom\",\n    \"description\": \"Una serie que muestra las costumbres y desafíos de las comunidades Qom en el norte argentino.\",\n    \"category\": \"Cultura\",\n    \"creatorId\": \"64d29f30a8b1a93e2f45b120\",\n    \"mediaType\": \"video\",\n    \"mediaUrl\": \"https://cdn.comuniarte.org/videos/qom-documental.mp4\",\n    \"tags\": [\"indígena\", \"documental\", \"cultura\"]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/contents",
+          "host": ["{{base_url}}"],
+          "path": ["api", "contents"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Obtener contenido por ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/contents/{{contentId}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "contents", "{{contentId}}"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Buscar contenidos por filtros",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/contents?category={{category}}&creatorId={{creatorId}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "contents"],
+          "query": [
+            {
+              "key": "category",
+              "value": "{{category}}",
+              "description": "Ejemplo: Cultura"
+            },
+            {
+              "key": "creatorId",
+              "value": "{{creatorId}}",
+              "description": "Ejemplo: 64d29f30a8b1a93e2f45b120"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Registrar visualización",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/contents/{{contentId}}/view",
+          "host": ["{{base_url}}"],
+          "path": ["api", "contents", "{{contentId}}", "view"]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "contentId",
+      "value": "64d2b9e5a8b1a93e2f45b130"
+    },
+    {
+      "key": "creatorId",
+      "value": "64d29f30a8b1a93e2f45b120"
+    },
+    {
+      "key": "category",
+      "value": "Cultura"
+    }
+  ]
+}
