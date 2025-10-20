@@ -1,0 +1,196 @@
+{
+  "info": {
+    "name": "ComuniArte API",
+    "_postman_id": "comuniarte-collection-001",
+    "description": "Colección de endpoints para la plataforma ComuniArte",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Content",
+      "item": [
+        {
+          "name": "Upload Content",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Mi video\",\n  \"description\": \"Descripción\",\n  \"category\": \"musica\",\n  \"creatorId\": \"123\",\n  \"mediaType\": \"video\",\n  \"mediaUrl\": \"http://...\",\n  \"tags\": [\"rock\", \"festival\"]\n}"
+            },
+            "url": {"raw": "http://localhost:8080/api/contents", "protocol": "http", "host": ["localhost"], "port": "8080", "path": ["api", "contents"]}
+          }
+        },
+        {
+          "name": "Get Content by ID",
+          "request": {
+            "method": "GET",
+            "url": {"raw": "http://localhost:8080/api/contents/1", "protocol": "http", "host": ["localhost"], "port": "8080", "path": ["api", "contents", "1"]}
+          }
+        },
+        {
+          "name": "List Contents with Filters",
+          "request": {
+            "method": "GET",
+            "url": {"raw": "http://localhost:8080/api/contents?category=musica&creatorId=123", "protocol": "http", "host": ["localhost"], "port": "8080", "path": ["api", "contents"], "query":[{"key":"category","value":"musica"},{"key":"creatorId","value":"123"}]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Laura\",\n  \"email\": \"laura@example.com\",\n  \"password\": \"123456\",\n  \"rol\": \"USER\"\n}"
+            },
+            "url": {"raw": "http://localhost:8080/api/users/register", "protocol": "http", "host": ["localhost"], "port": "8080", "path": ["api", "users", "register"]}
+          }
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"laura@example.com\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {"raw": "http://localhost:8080/api/users/login", "protocol": "http", "host": ["localhost"], "port": "8080", "path": ["api", "users", "login"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Network",
+      "item": [
+        {
+          "name": "Follow User",
+          "request": {
+            "method": "POST",
+            "url": {"raw": "http://localhost:8080/api/network/follow?followerId=123&creatorId=456", "protocol": "http", "host": ["localhost"], "port": "8080", "path": ["api", "network", "follow"], "query":[{"key":"followerId","value":"123"},{"key":"creatorId","value":"456"}]}
+          }
+        },
+        {
+          "name": "Unfollow User",
+          "request": {
+            "method": "POST",
+            "url": {"raw": "http://localhost:8080/api/network/unfollow?followerId=123&creatorId=456", "protocol": "http", "host": ["localhost"], "port": "8080", "path": ["api", "network", "unfollow"], "query":[{"key":"followerId","value":"123"},{"key":"creatorId","value":"456"}]}
+          }
+        },
+        {
+          "name": "Get Followers",
+          "request": {"method": "GET", "url": {"raw": "http://localhost:8080/api/network/followers/123", "protocol": "http", "host": ["localhost"], "port": "8080", "path": ["api", "network", "followers", "123"]}}
+        },
+        {
+          "name": "Get Following",
+          "request": {"method": "GET", "url": {"raw": "http://localhost:8080/api/network/following/123", "protocol": "http", "host": ["localhost"], "port": "8080", "path": ["api", "network", "following", "123"]}}
+        }
+      ]
+    },
+    {
+      "name": "Live",
+      "item": [
+        {
+          "name": "Donate",
+          "request": {
+            "method": "POST",
+            "url": {"raw": "http://localhost:8080/api/live/1/donate?amount=50", "protocol": "http", "host": ["localhost"], "port": "8080", "path": ["api", "live", "1", "donate"], "query":[{"key":"amount","value":"50"}]}
+          }
+        },
+        {
+          "name": "Send Question",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type","value":"application/json"}],
+            "body":{"mode":"raw","raw":"{\"question\":\"¿Cómo nació la canción?\"}"},
+            "url":{"raw":"http://localhost:8080/api/live/1/questions","protocol":"http","host":["localhost"],"port":"8080","path":["api","live","1","questions"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Register View",
+          "request": {"method": "POST","url":{"raw":"http://localhost:8080/api/analytics/views?contentId=1","protocol":"http","host":["localhost"],"port":"8080","path":["api","analytics","views"],"query":[{"key":"contentId","value":"1"}]}}
+        },
+        {
+          "name": "Get Content Metrics",
+          "request": {"method":"GET","url":{"raw":"http://localhost:8080/api/analytics/content/1","protocol":"http","host":["localhost"],"port":"8080","path":["api","analytics","content","1"]}}
+        }
+      ]
+    },
+    {
+      "name": "System",
+      "item": [
+        {"name":"Get System Status","request":{"method":"GET","url":{"raw":"http://localhost:8080/api/system/status","protocol":"http","host":["localhost"],"port":"8080","path":["api","system","status"]}}},
+        {"name":"Get System Config","request":{"method":"GET","url":{"raw":"http://localhost:8080/api/system/config","protocol":"http","host":["localhost"],"port":"8080","path":["api","system","config"]}}}
+      ]
+    },
+    {
+  "name": "Content",
+  "item": [
+    {
+      "name": "Upload Content",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Mi video\",\n  \"description\": \"Descripción\",\n  \"category\": \"musica\",\n  \"creatorId\": \"123\",\n  \"mediaType\": \"video\",\n  \"mediaUrl\": \"http://...\",\n  \"tags\": [\"rock\", \"festival\"]\n}"
+        },
+        "url": {"raw": "http://localhost:8080/api/contents", "protocol": "http", "host": ["localhost"], "port": "8080", "path": ["api", "contents"]}
+      }
+    },
+    {
+      "name": "Get Content by ID",
+      "request": {
+        "method": "GET",
+        "url": {"raw": "http://localhost:8080/api/contents/1", "protocol": "http", "host": ["localhost"], "port": "8080", "path": ["api", "contents", "1"]}
+      }
+    },
+    {
+      "name": "List Contents with Filters",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:8080/api/contents/list?category=musica&tag=rock&creatorId=123&type=video&page=0&size=20",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "contents", "list"],
+          "query": [
+            {"key": "category", "value": "musica"},
+            {"key": "tag", "value": "rock"},
+            {"key": "creatorId", "value": "123"},
+            {"key": "type", "value": "video"},
+            {"key": "page", "value": "0"},
+            {"key": "size", "value": "20"}
+          ]
+        }
+      }
+    },
+    {
+      "name": "Register View",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "http://localhost:8080/api/contents/1/view",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "contents", "1", "view"]
+        }
+      }
+    }
+  ]
+}
+  ]
+}
