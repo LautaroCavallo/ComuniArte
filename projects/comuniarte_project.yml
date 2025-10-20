@@ -1,0 +1,98 @@
+# 🧠 GitHub Project Beta - ComuniARTE
+# Crea un tablero de seguimiento ágil para el TP de Ingeniería de Datos II
+# Integrantes: LautaroCavallo (Infra/DevOps), LauraMont (Backend/DB), nicodiaz101 (BI/Docs)
+
+name: ComuniARTE
+description: >
+  Proyecto académico de streaming cultural. 
+  Incluye diseño de modelo de datos (MongoDB, Redis, Neo4j), ingesta en tiempo real, API analítica, dashboards y defensa final.
+public: false
+
+# === CONFIGURACIÓN DE CAMPOS ===
+fields:
+  - name: Estado
+    data_type: single_select
+    options:
+      - name: 🧩 Backlog
+        color: gray
+      - name: 🚧 In Progress
+        color: yellow
+      - name: ✅ Done
+        color: green
+
+  - name: Prioridad
+    data_type: single_select
+    options:
+      - name: Alta
+        color: red
+      - name: Media
+        color: orange
+      - name: Baja
+        color: blue
+
+  - name: Hito
+    data_type: single_select
+    options:
+      - name: H1 - Modelo de Datos
+        color: purple
+      - name: H2 - Ingesta & Streaming
+        color: pink
+      - name: H3 - API Analítica
+        color: indigo
+      - name: H4 - Dashboard & Observabilidad
+        color: teal
+      - name: H5 - Escalabilidad & Defensa
+
+  - name: Asignado a
+    data_type: text
+
+  - name: Última actualización
+    data_type: date
+
+# === VISTAS ===
+views:
+  - name: Kanban general
+    layout: board
+    group_by: Estado
+    filters:
+      - field: Hito
+        operator: is_not_empty
+    sort_by: Última actualización
+    sort_direction: desc
+
+  - name: Por Hito
+    layout: table
+    group_by: Hito
+    columns:
+      - Title
+      - Estado
+      - Prioridad
+      - Asignado a
+      - Última actualización
+
+  - name: Tareas de cada integrante
+    layout: table
+    filters:
+      - field: Asignado a
+        operator: is_not_empty
+    columns:
+      - Title
+      - Hito
+      - Estado
+      - Prioridad
+
+# === AUTOMATIZACIONES ===
+automation:
+  - name: Mover a "In Progress" cuando se asigne
+    event: on_assignment
+    action:
+      set_field:
+        field: Estado
+        value: 🚧 In Progress
+
+  - name: Mover a "Done" cuando se cierre el issue
+    event: on_issue_closed
+    action:
+      set_field:
+        field: Estado
+        value: ✅ Done
