@@ -1,7 +1,9 @@
 package com.uade.tpo.marketplace.repository;
 
-import com.uade.tpo.marketplace.entity.Content;
 import org.springframework.data.mongodb.repository.MongoRepository;
+
+import com.uade.tpo.marketplace.entity.Content;
+
 import java.util.List;
 
 public interface ContentRepository extends MongoRepository<Content, String> {

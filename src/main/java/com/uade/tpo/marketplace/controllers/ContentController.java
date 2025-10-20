@@ -32,12 +32,17 @@ public class ContentController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // GET /api/contents?category=&creatorId=
-    @GetMapping
+    // GET /api/content/list?category=&tag=&creatorId=&type=&page=&size=
+    @GetMapping("/list")
     public ResponseEntity<List<Content>> getContentsByFilters(
             @RequestParam(required = false) String category,
-            @RequestParam(required = false) String creatorId) {
-        List<Content> results = contentService.findContents(category, creatorId);
+            @RequestParam(required = false) String tag,
+            @RequestParam(required = false) String creatorId,
+            @RequestParam(required = false) String type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        List<Content> results = contentService.findContentsWithFilters(category, tag, creatorId, type, page, size);
         return ResponseEntity.ok(results);
     }
 

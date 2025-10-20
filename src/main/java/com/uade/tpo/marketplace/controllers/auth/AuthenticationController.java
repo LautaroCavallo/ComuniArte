@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.uade.tpo.marketplace.entity.Usuario;
+import com.uade.tpo.marketplace.entity.User;
 import com.uade.tpo.marketplace.service.AuthenticationService;
 
 import lombok.RequiredArgsConstructor;
