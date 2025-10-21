@@ -1,0 +1,276 @@
+version: '3.8'
+
+secrets:
+  mongo_root_password:
+    file: ./secrets/mongo_root_password.txt
+  neo4j_password:
+    file: ./secrets/neo4j_password.txt
+  minio_password:
+    file: ./secrets/minio_password.txt
+
+services:
+  # MongoDB - Perfiles de usuarios, metadatos de contenidos, interacciones
+  mongodb:
+    image: mongo:7.0
+    container_name: comuniarte-mongodb
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:27017:27017"  # Solo localhost
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo_root_password
+      MONGO_INITDB_DATABASE: comuniarte_db
+    secrets:
+      - mongo_root_password
+    volumes:
+      - mongodb_data:/data/db
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - ./config/mongodb-security.conf:/etc/mongod.conf:ro
+    networks:
+      - comuniarte-network
+    command: mongod --config /etc/mongod.conf
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run
+    user: "999:999"  # Usuario no-root
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+
+  # Neo4j - Grafo de creadores/seguidores y recomendaciones
+  neo4j:
+    image: neo4j:5.15-community
+    container_name: comuniarte-neo4j
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:7474:7474"  # Solo localhost
+      - "127.0.0.1:7687:7687"  # Solo localhost
+    environment:
+      NEO4J_AUTH: neo4j
+      NEO4J_PASSWORD_FILE: /run/secrets/neo4j_password
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_dbms_security_procedures_unrestricted: apoc.*
+      NEO4J_dbms_security_procedures_allowlist: apoc.*
+      NEO4J_dbms_security_http_authorization_enabled: true
+      NEO4J_dbms_security_http_authorization_whitelist: 192.168.1.0/24
+    secrets:
+      - neo4j_password
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_import:/var/lib/neo4j/import
+      - neo4j_plugins:/plugins
+    networks:
+      - comuniarte-network
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run
+    user: "7474:7474"  # Usuario no-root
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+
+  # Redis - Chat en vivo, contadores, eventos en tiempo real
+  redis:
+    image: redis:7.2-alpine
+    container_name: comuniarte-redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"  # Solo localhost
+    volumes:
+      - redis_data:/data
+      - ./config/redis-secure.conf:/usr/local/etc/redis/redis.conf:ro
+    networks:
+      - comuniarte-network
+    command: redis-server /usr/local/etc/redis/redis.conf
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    user: "999:999"  # Usuario no-root
+    cap_drop:
+      - ALL
+
+  # MinIO - Almacenamiento S3-compatible para videos y audios
+  minio:
+    image: minio/minio:latest
+    container_name: comuniarte-minio
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9000:9000"  # Solo localhost
+      - "127.0.0.1:9001:9001"  # Solo localhost
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD_FILE: /run/secrets/minio_password
+      MINIO_BROWSER_REDIRECT_URL: https://comuniarte.local/minio/
+    secrets:
+      - minio_password
+    volumes:
+      - minio_data:/data
+    networks:
+      - comuniarte-network
+    command: server /data --console-address ":9001"
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    user: "1000:1000"  # Usuario no-root
+    cap_drop:
+      - ALL
+
+  # Redis Commander - Interfaz web para Redis (solo desarrollo)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: comuniarte-redis-commander
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: local:redis:6379
+      HTTP_USER: admin
+      HTTP_PASSWORD: admin1234
+    networks:
+      - comuniarte-network
+    depends_on:
+      - redis
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    user: "1000:1000"  # Usuario no-root
+    cap_drop:
+      - ALL
+
+  # Nginx Reverse Proxy con SSL/TLS y WAF
+  nginx:
+    image: nginx:alpine
+    container_name: comuniarte-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"   # HTTP (redirige a HTTPS)
+      - "443:443" # HTTPS
+    volumes:
+      - ./config/nginx-secure.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./ssl/certs:/etc/ssl/certs:ro
+      - ./ssl/private:/etc/ssl/private:ro
+      - nginx_logs:/var/log/nginx
+    networks:
+      - comuniarte-network
+    depends_on:
+      - mongodb
+      - neo4j
+      - redis
+      - minio
+      - redis-commander
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+    user: "101:101"  # Usuario no-root
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+      - NET_BIND_SERVICE
+
+  # Fail2Ban - Protección contra ataques automatizados
+  fail2ban:
+    image: fail2ban/fail2ban:latest
+    container_name: comuniarte-fail2ban
+    restart: unless-stopped
+    volumes:
+      - ./config/fail2ban.conf:/etc/fail2ban/jail.local:ro
+      - nginx_logs:/var/log/nginx:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    networks:
+      - comuniarte-network
+    depends_on:
+      - nginx
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run
+    user: "root"  # Necesita root para modificar iptables
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    cap_drop:
+      - ALL
+
+  # Watchtower - Actualizaciones automáticas de seguridad
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: comuniarte-watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      WATCHTOWER_CLEANUP: true
+      WATCHTOWER_POLL_INTERVAL: 3600  # 1 hora
+      WATCHTOWER_INCLUDE_RESTARTING: true
+      WATCHTOWER_NOTIFICATIONS: email
+      WATCHTOWER_NOTIFICATION_EMAIL_FROM: security@comuniarte.local
+      WATCHTOWER_NOTIFICATION_EMAIL_TO: admin@comuniarte.local
+    networks:
+      - comuniarte-network
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    user: "1000:1000"  # Usuario no-root
+    cap_drop:
+      - ALL
+
+volumes:
+  mongodb_data:
+    driver: local
+  neo4j_data:
+    driver: local
+  neo4j_logs:
+    driver: local
+  neo4j_import:
+    driver: local
+  neo4j_plugins:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
+  nginx_logs:
+    driver: local
+
+networks:
+  comuniarte-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+    driver_opts:
+      com.docker.network.bridge.enable_icc: "false"
+      com.docker.network.bridge.enable_ip_masquerade: "true"
+      com.docker.network.bridge.host_binding_ipv4: "127.0.0.1"

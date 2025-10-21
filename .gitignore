@@ -31,3 +31,17 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Docker Secrets ###
+secrets/
+*.env
+.env.local
+.env.production
+
+### SSL/TLS Certificates ###
+ssl/
+*.crt
+*.key
+*.pem
+*.p12
+*.pfx
