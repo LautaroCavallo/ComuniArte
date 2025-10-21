@@ -56,16 +56,7 @@ BACKEND_CONFIG.env
 VERIFICATION.md
 documentation/VERIFICATION.md
 
-### Monitoring Credentials ###
-documentation/MONITORING.md
-MONITORING_CREDENTIALS.md
-
-### Load Testing Credentials ###
-LOAD_TESTING_CREDENTIALS.md
-
-### Analytics Credentials ###
-REALTIME_ANALYTICS_CREDENTIALS.md
-
-### Test Reports ###
+### Credentials and Sensitive Files ###
+CREDENTIALS.md
 TEST_REPORT.md
 test-systems.ps1
