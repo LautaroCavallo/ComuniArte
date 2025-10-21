@@ -55,3 +55,7 @@ BACKEND_CONFIG.env
 
 VERIFICATION.md
 documentation/VERIFICATION.md
+
+### Monitoring Credentials ###
+documentation/MONITORING.md
+MONITORING_CREDENTIALS.md
