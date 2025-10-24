@@ -1,6 +1,6 @@
 package com.uade.tpo.marketplace.service;
 
-import com.uade.tpo.marketplace.entity.Content;
+import com.uade.tpo.marketplace.entity.mongodb.Contenido;
 import com.uade.tpo.marketplace.repository.ContentRepository;
 import org.springframework.stereotype.Service;
 
@@ -22,17 +22,17 @@ public class ContentService {
     }
 
     // Crear o actualizar contenido
-    public Content saveContent(Content content) {
+    public Contenido saveContent(Contenido content) {
         return contentRepository.save(content);
     }
 
     // Obtener por ID
-    public Optional<Content> getContentById(String id) {
+    public Optional<Contenido> getContentById(String id) {
         return contentRepository.findById(id);
     }
 
     // Buscar por filtros opcionales
-    public List<Content> findContents(String category, String creatorId) {
+    public List<Contenido> findContents(String category, String creatorId) {
         if (category != null && creatorId != null) {
             return contentRepository.findByCategoryAndCreatorId(category, creatorId);
         } else if (category != null) {
@@ -43,15 +43,15 @@ public class ContentService {
             return contentRepository.findAll();
         }
     }
-    public List<Content> findContentsWithFilters(String category, String creatorId, String mediaType, String tag, int page, int size) {
+    public List<Contenido> findContentsWithFilters(String category, String creatorId, String mediaType, String tag, int page, int size) {
         // Por ahora: filtrado simple en memoria (hasta tener query específica o Pageable)
-        List<Content> allContents = contentRepository.findAll();
+        List<Contenido> allContents = contentRepository.findAll();
 
         return allContents.stream()
-                .filter(c -> category == null || c.getCategory().equalsIgnoreCase(category))
-                .filter(c -> creatorId == null || c.getCreatorId().equalsIgnoreCase(creatorId))
-                .filter(c -> mediaType == null || c.getMediaType().equalsIgnoreCase(mediaType))
-                .filter(c -> tag == null || (c.getTags() != null && c.getTags().contains(tag)))
+                .filter(c -> category == null || c.getCategoria().equalsIgnoreCase(category))
+                .filter(c -> creatorId == null || c.getCreadorId().equalsIgnoreCase(creatorId))
+                .filter(c -> mediaType == null || c.getTipo().equalsIgnoreCase(mediaType))
+                .filter(c -> tag == null || (c.getEtiquetas() != null && c.getEtiquetas().contains(tag)))
                 .skip((long) page * size)
                 .limit(size)
                 .toList();

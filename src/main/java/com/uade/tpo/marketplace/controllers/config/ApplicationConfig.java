@@ -12,7 +12,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.uade.tpo.marketplace.entity.Rol;
-import com.uade.tpo.marketplace.entity.Usuario;
+import com.uade.tpo.marketplace.entity.mongodb.Usuario;
 import com.uade.tpo.marketplace.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -30,8 +30,7 @@ public UserDetailsService userDetailsService() {
 
         return org.springframework.security.core.userdetails.User.builder()
                 .username(user.getEmail())
-                .password(user.getPassword())
-                .roles(user.getRol().name())
+                .roles(user.getTipoUsuario())
                 .build();
     };
 }

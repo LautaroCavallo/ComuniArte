@@ -8,7 +8,7 @@ import javax.crypto.SecretKey;
 
 import org.springframework.stereotype.Service;
 
-import com.uade.tpo.marketplace.entity.Usuario;
+import com.uade.tpo.marketplace.entity.mongodb.Usuario;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -32,7 +32,7 @@ public class JWTService {
     return Jwts
             .builder()
             .claim("nombre", user.getNombre())
-            .claim("rol", user.getRol())
+            .claim("rol", user.getTipoUsuario())
             .subject(user.getEmail())
             .issuedAt(new Date(System.currentTimeMillis()))
             .expiration(new Date(System.currentTimeMillis() + expiration))
