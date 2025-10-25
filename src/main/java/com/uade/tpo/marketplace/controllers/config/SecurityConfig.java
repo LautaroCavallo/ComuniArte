@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 
@@ -34,23 +35,26 @@ public class SecurityConfig {
                 http
                         .cors(cors -> cors.configurationSource(request -> {
                         CorsConfiguration config = new CorsConfiguration();
-                        config.setAllowedOrigins(List.of("http://localhost:5173"));
+                        config.setAllowedOriginPatterns(List.of("*"));
                         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                         config.setAllowedHeaders(List.of("*"));
                         config.setAllowCredentials(true);
                         return config;
                         }))
                                 .csrf(AbstractHttpConfigurer::disable)
-                                .authorizeHttpRequests(req -> req.requestMatchers("/api/v1/auth/**").permitAll()
-                                .requestMatchers("/ws/**").permitAll() // Permitir WebSocket
-
-                                                .anyRequest()
-                                                .authenticated())
+                                .authorizeHttpRequests(req -> req
+                                                .requestMatchers("/api/health", "/api/health/**").permitAll()
+                                                .requestMatchers("/api/v1/auth/**").permitAll()
+                                                .requestMatchers("/api/users/**").permitAll()
+                                                .requestMatchers("/ws/**").permitAll()
+                                                .anyRequest().authenticated())
                                 .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
                                 .authenticationProvider(authenticationProvider)
                                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
                 return http.build();
         }
+
+        // Removed WebSecurityCustomizer to avoid MVC ignores masking issues
 }
 

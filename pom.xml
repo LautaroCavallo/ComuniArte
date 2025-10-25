@@ -12,9 +12,9 @@
     </parent>
 
     <groupId>com.uade.tpo</groupId>
-    <artifactId>marketplace</artifactId>
+    <artifactId>comuniarte</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>marketplace</name>
+    <name>ComuniArte</name>
     <description>SoundPass Project TPO</description>
 
     <properties>

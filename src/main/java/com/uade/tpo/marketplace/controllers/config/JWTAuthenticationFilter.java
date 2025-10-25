@@ -25,27 +25,28 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
     private final UserDetailsService userDetailsService;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        return path.startsWith("/api/v1/auth/") ||
+               path.startsWith("/api/users/") ||
+               path.startsWith("/api/health") ||
+               path.startsWith("/ws/");
+    }
+
+    @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
-        
-        // Skip JWT validation for already authenticated requests or permitted paths
-        if (SecurityContextHolder.getContext().getAuthentication() != null) {
-            filterChain.doFilter(request, response);
-            return;
-        }
 
         final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String userEmail;
-        
+
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        jwt = authHeader.substring(7);
-        userEmail = jwtService.extractUsername(jwt);
-        
+        final String jwt = authHeader.substring(7);
+        final String userEmail = jwtService.extractUsername(jwt);
+
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
             if (jwtService.isTokenValid(jwt, userDetails)) {
