@@ -16,7 +16,7 @@ import com.uade.tpo.marketplace.controllers.auth.RegisterRequest;
 import com.uade.tpo.marketplace.controllers.config.JWTService;
 import com.uade.tpo.marketplace.entity.Rol;
 import com.uade.tpo.marketplace.entity.mongodb.Usuario;
-import com.uade.tpo.marketplace.repository.UserRepository;
+import com.uade.tpo.marketplace.repository.mongodb.UsuarioRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,29 +24,30 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthenticationService {
 
-    private final UserRepository repository;
+    private final UsuarioRepository repository;
     private final PasswordEncoder passwordEncoder;
     private final JWTService jwtService;
     private final AuthenticationManager authenticationManager;
 
     public AuthenticationResponse register(RegisterRequest request) {
-        // Uso de Instant para mayor precisión, luego convertido a Date
-        var fechaRegistro = Date.from(Instant.now()); 
-        
-        // El tipo ya no será Object gracias a @Builder en Usuario
-        var user = Usuario.builder() 
+        repository.findByEmail(request.getEmail()).ifPresent(u -> {
+            throw new IllegalArgumentException("Email ya registrado");
+        });
+
+        var fechaRegistro = Date.from(Instant.now());
+
+        var user = Usuario.builder()
                 .nombre(request.getNombre())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .fechaRegistro(fechaRegistro)
-                // Asumo que el tipo_usuario debe inicializarse. Si no está en RegisterRequest, se puede inferir:
-                .tipoUsuario("espectador") // Valor por defecto sensato para el registro
+                .tipoUsuario("espectador")
+                .rol("ESPECTADOR")
                 .build();
 
-        // Ahora el compilador sabe que 'user' es de tipo Usuario
-        repository.save(user); 
+        repository.save(user);
         var jwtToken = jwtService.generateToken(user);
-        
+
         return AuthenticationResponse.builder()
                 .accessToken(jwtToken)
                 .userId(user.getId())

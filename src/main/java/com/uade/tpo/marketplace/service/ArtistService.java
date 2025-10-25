@@ -2,7 +2,7 @@ package com.uade.tpo.marketplace.service;
 
 import com.uade.tpo.marketplace.entity.dto.ArtistaRequest;
 import com.uade.tpo.marketplace.entity.mongodb.Artista;
-import com.uade.tpo.marketplace.repository.ArtistRepository;
+import com.uade.tpo.marketplace.repository.mongodb.ArtistaRepository;
 
 import java.util.List;
 
@@ -10,9 +10,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class ArtistService {
 
-    private final ArtistRepository repository;
+    private final ArtistaRepository repository;
 
-    public ArtistService(ArtistRepository repository) {
+    public ArtistService(ArtistaRepository repository) {
         this.repository = repository;
     }
 

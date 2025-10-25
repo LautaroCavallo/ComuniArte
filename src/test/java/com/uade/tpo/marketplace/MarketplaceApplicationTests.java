@@ -1,10 +1,10 @@
-package com.uade.tpo.marketplace;
+package com.uade.tpo.comuniarte;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class MarketplaceApplicationTests {
+class ComuniArteApplicationTests {
 
 	@Test
 	void contextLoads() {

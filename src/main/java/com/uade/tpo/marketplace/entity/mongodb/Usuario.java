@@ -25,6 +25,7 @@ public class Usuario {
     private String nombre;
     private String email;
     private String tipoUsuario; // 'espectador' o 'creador'
+    private String rol; // Align with mongo validator: ESPECTADOR/CREADOR/ADMIN
     private String region;
     private List<String> intereses;
     private Map<String, String> perfilRedes; // Ej: {"instagram": "url", "twitter": "url"}
