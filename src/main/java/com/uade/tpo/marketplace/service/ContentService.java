@@ -15,15 +15,48 @@ import java.util.UUID;
 public class ContentService {
 
     private final ContenidoRepository contenidoRepository;
-    private static final String VIEW_COUNT_KEY_PREFIX = "content:viewcount:";
 
     public ContentService(ContenidoRepository contenidoRepository) {
         this.contenidoRepository = contenidoRepository;
     }
 
-    // Crear o actualizar contenido
+    // Crear contenido
     public Contenido saveContent(Contenido content) {
+        content.setFechaPublicacion(LocalDateTime.now());
         return contenidoRepository.save(content);
+    }
+
+    // Actualizar contenido existente
+    public Contenido updateContent(String id, Contenido updatedContent) {
+        return contenidoRepository.findById(id)
+                .map(existingContent -> {
+                    // Actualizar solo los campos que no son null
+                    if (updatedContent.getTitulo() != null) {
+                        existingContent.setTitulo(updatedContent.getTitulo());
+                    }
+                    if (updatedContent.getTipo() != null) {
+                        existingContent.setTipo(updatedContent.getTipo());
+                    }
+                    if (updatedContent.getUrlArchivo() != null) {
+                        existingContent.setUrlArchivo(updatedContent.getUrlArchivo());
+                    }
+                    if (updatedContent.getMetadatosEnriquecidos() != null) {
+                        existingContent.setMetadatosEnriquecidos(updatedContent.getMetadatosEnriquecidos());
+                    }
+                    if (updatedContent.getCategoria() != null) {
+                        existingContent.setCategoria(updatedContent.getCategoria());
+                    }
+                    if (updatedContent.getEtiquetas() != null) {
+                        existingContent.setEtiquetas(updatedContent.getEtiquetas());
+                    }
+                    return contenidoRepository.save(existingContent);
+                })
+                .orElseThrow(() -> new RuntimeException("Contenido no encontrado con id: " + id));
+    }
+
+    // Eliminar contenido
+    public void deleteContent(String id) {
+        contenidoRepository.deleteById(id);
     }
 
     // Obtener por ID
@@ -59,8 +92,8 @@ public class ContentService {
 
     // Incrementar contador de vistas (puede integrarse con Redis más adelante)
     public void incrementViewCount(String contentId) {
-        String key = VIEW_COUNT_KEY_PREFIX + contentId;
         // Si integrás Redis, podés descomentar algo como:
+        // String key = VIEW_COUNT_KEY_PREFIX + contentId;
         // redisTemplate.opsForValue().increment(key);
     }
 
