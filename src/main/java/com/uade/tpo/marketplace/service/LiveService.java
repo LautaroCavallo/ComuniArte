@@ -1,7 +1,11 @@
 package com.uade.tpo.marketplace.service;
 
+import com.uade.tpo.marketplace.entity.mongodb.Contenido;
 import com.uade.tpo.marketplace.entity.mongodb.Transaccion;
+import com.uade.tpo.marketplace.entity.mongodb.Transmision;
+import com.uade.tpo.marketplace.repository.mongodb.ContenidoRepository;
 import com.uade.tpo.marketplace.repository.mongodb.TransaccionRepository;
+import com.uade.tpo.marketplace.repository.mongodb.TransmisionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -10,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -18,6 +23,8 @@ public class LiveService {
 
     private final RedisTemplate<String, String> redisTemplate;
     private final TransaccionRepository transaccionRepository;
+    private final TransmisionRepository transmisionRepository;
+    private final ContenidoRepository contenidoRepository;
 
     private static final String LIVE_CHAT_PREFIX = "live:comentarios:";
     private static final String LIVE_VIEWERS_PREFIX = "live:viewers:";
@@ -269,6 +276,223 @@ public class LiveService {
             
         } catch (Exception e) {
             log.error("Error al eliminar espectador: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Inicia una nueva transmisión en vivo
+     * Crea registro en MongoDB y configura estructuras en Redis
+     * 
+     * @param creadorId ID del creador
+     * @param titulo Título de la transmisión
+     * @param descripcion Descripción
+     * @param categoria Categoría
+     * @param etiquetas Lista de etiquetas
+     * @return Transmisión creada
+     */
+    public Transmision startLive(String creadorId, String titulo, String descripcion, 
+                                 String categoria, List<String> etiquetas) {
+        log.info("Iniciando transmisión en vivo para creador {}: {}", creadorId, titulo);
+        
+        try {
+            // Crear transmisión en MongoDB
+            Transmision transmision = Transmision.builder()
+                    .creadorId(creadorId)
+                    .titulo(titulo)
+                    .descripcion(descripcion)
+                    .categoria(categoria)
+                    .etiquetas(etiquetas)
+                    .estado("ACTIVA")
+                    .fechaInicio(LocalDateTime.now())
+                    .espectadoresMax(0)
+                    .totalDonaciones(0)
+                    .montoTotalDonaciones(0.0)
+                    .totalPreguntas(0)
+                    .totalMensajes(0)
+                    .build();
+            
+            Transmision saved = transmisionRepository.save(transmision);
+            log.info("Transmisión creada con ID: {}", saved.getId());
+            
+            // Inicializar estructuras en Redis
+            String viewersKey = LIVE_VIEWERS_PREFIX + saved.getId();
+            redisTemplate.opsForSet().add(viewersKey, "initialized");
+            redisTemplate.opsForSet().remove(viewersKey, "initialized");
+            
+            // Publicar evento de inicio
+            redisTemplate.convertAndSend("live:events:" + saved.getId(), 
+                    "START|" + creadorId + "|" + titulo);
+            
+            return saved;
+            
+        } catch (Exception e) {
+            log.error("Error al iniciar transmisión: {}", e.getMessage(), e);
+            throw new RuntimeException("Error al iniciar transmisión en vivo", e);
+        }
+    }
+
+    /**
+     * Finaliza una transmisión en vivo
+     * Actualiza MongoDB con estadísticas finales y opcionalmente guarda como contenido
+     * 
+     * @param liveId ID de la transmisión
+     * @param guardarComoContenido Si debe guardarse como contenido permanente
+     * @return Transmisión actualizada
+     */
+    public Transmision endLive(String liveId, boolean guardarComoContenido) {
+        log.info("Finalizando transmisión {}, guardar como contenido: {}", liveId, guardarComoContenido);
+        
+        try {
+            // Buscar transmisión
+            Transmision transmision = transmisionRepository.findById(liveId)
+                    .orElseThrow(() -> new RuntimeException("Transmisión no encontrada: " + liveId));
+            
+            if (!"ACTIVA".equals(transmision.getEstado())) {
+                log.warn("La transmisión {} ya no está activa", liveId);
+                return transmision;
+            }
+            
+            // Obtener estadísticas finales de Redis
+            String viewersKey = LIVE_VIEWERS_PREFIX + liveId;
+            Long currentViewers = redisTemplate.opsForSet().size(viewersKey);
+            
+            String questionsKey = LIVE_QUESTIONS_PREFIX + liveId;
+            Long totalQuestions = redisTemplate.opsForList().size(questionsKey);
+            
+            String chatKey = LIVE_CHAT_PREFIX + liveId;
+            Long totalMessages = redisTemplate.opsForList().size(chatKey);
+            
+            String donationsKey = LIVE_DONATIONS_PREFIX + liveId;
+            List<String> donations = redisTemplate.opsForList().range(donationsKey, 0, -1);
+            
+            // Calcular estadísticas de donaciones
+            int totalDonations = donations != null ? donations.size() : 0;
+            double totalAmount = 0.0;
+            if (donations != null) {
+                for (String donation : donations) {
+                    String[] parts = donation.split("\\|");
+                    if (parts.length >= 2) {
+                        try {
+                            totalAmount += Double.parseDouble(parts[1]);
+                        } catch (NumberFormatException e) {
+                            log.warn("Error al parsear donación: {}", donation);
+                        }
+                    }
+                }
+            }
+            
+            // Actualizar transmisión con estadísticas finales
+            transmision.setEstado("FINALIZADA");
+            transmision.setFechaFin(LocalDateTime.now());
+            transmision.setEspectadoresMax(currentViewers != null ? currentViewers.intValue() : 0);
+            transmision.setTotalPreguntas(totalQuestions != null ? totalQuestions.intValue() : 0);
+            transmision.setTotalMensajes(totalMessages != null ? totalMessages.intValue() : 0);
+            transmision.setTotalDonaciones(totalDonations);
+            transmision.setMontoTotalDonaciones(totalAmount);
+            
+            // Guardar como contenido permanente si se solicita
+            if (guardarComoContenido) {
+                Contenido contenido = Contenido.builder()
+                        .titulo(transmision.getTitulo())
+                        .tipo("live")
+                        .creadorId(transmision.getCreadorId())
+                        .categoria(transmision.getCategoria())
+                        .etiquetas(transmision.getEtiquetas())
+                        .urlArchivo(transmision.getUrlGrabacion())
+                        .fechaPublicacion(LocalDateTime.now())
+                        .metadatosEnriquecidos(Map.of(
+                            "transmisionId", liveId,
+                            "espectadoresMax", transmision.getEspectadoresMax(),
+                            "duracion", java.time.Duration.between(
+                                transmision.getFechaInicio(), 
+                                transmision.getFechaFin()
+                            ).toMinutes()
+                        ))
+                        .build();
+                
+                Contenido savedContent = contenidoRepository.save(contenido);
+                transmision.setContenidoId(savedContent.getId());
+                log.info("Transmisión guardada como contenido: {}", savedContent.getId());
+            }
+            
+            Transmision saved = transmisionRepository.save(transmision);
+            
+            // Limpiar datos de Redis (opcional - mantener por 24h para análisis)
+            // redisTemplate.expire(viewersKey, 24, TimeUnit.HOURS);
+            // redisTemplate.expire(questionsKey, 24, TimeUnit.HOURS);
+            // redisTemplate.expire(chatKey, 24, TimeUnit.HOURS);
+            
+            // Publicar evento de finalización
+            redisTemplate.convertAndSend("live:events:" + liveId, 
+                    "END|" + transmision.getCreadorId());
+            
+            log.info("Transmisión finalizada exitosamente");
+            return saved;
+            
+        } catch (Exception e) {
+            log.error("Error al finalizar transmisión: {}", e.getMessage(), e);
+            throw new RuntimeException("Error al finalizar transmisión", e);
+        }
+    }
+
+    /**
+     * Obtiene información de una transmisión
+     * @param liveId ID de la transmisión
+     * @return Transmisión
+     */
+    public Optional<Transmision> getTransmision(String liveId) {
+        return transmisionRepository.findById(liveId);
+    }
+
+    /**
+     * Obtiene todas las transmisiones activas
+     * @return Lista de transmisiones activas
+     */
+    public List<Transmision> getActiveTransmissions() {
+        return transmisionRepository.findAllActive();
+    }
+
+    /**
+     * Obtiene transmisiones de un creador
+     * @param creadorId ID del creador
+     * @return Lista de transmisiones
+     */
+    public List<Transmision> getCreatorTransmissions(String creadorId) {
+        return transmisionRepository.findByCreadorId(creadorId);
+    }
+
+    /**
+     * Obtiene los espectadores activos de una transmisión
+     * @param liveId ID de la transmisión
+     * @return Lista de IDs de usuarios espectadores
+     */
+    public List<String> getActiveViewers(String liveId) {
+        try {
+            String viewersKey = LIVE_VIEWERS_PREFIX + liveId;
+            var viewers = redisTemplate.opsForSet().members(viewersKey);
+            if (viewers == null) {
+                return Collections.emptyList();
+            }
+            return viewers.stream().collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("Error al obtener espectadores: {}", e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * Obtiene el número de espectadores activos
+     * @param liveId ID de la transmisión
+     * @return Número de espectadores
+     */
+    public long getViewersCount(String liveId) {
+        try {
+            String viewersKey = LIVE_VIEWERS_PREFIX + liveId;
+            Long count = redisTemplate.opsForSet().size(viewersKey);
+            return count != null ? count : 0L;
+        } catch (Exception e) {
+            log.error("Error al contar espectadores: {}", e.getMessage());
+            return 0L;
         }
     }
 }
