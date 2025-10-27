@@ -1,4 +1,4 @@
-package com.uade.tpo.comuniarte;
+package com.uade.tpo.marketplace;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

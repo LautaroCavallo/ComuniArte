@@ -22,5 +22,5 @@ public class SigueRelacion {
     private LocalDateTime fechaInicio;
 
     @TargetNode
-    private Usuario seguido;
+    private UsuarioNeo4j seguido;
 }

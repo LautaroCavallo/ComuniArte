@@ -30,7 +30,9 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
         return path.startsWith("/api/v1/auth/") ||
                path.startsWith("/api/users/") ||
                path.startsWith("/api/health") ||
-               path.startsWith("/ws/");
+               path.startsWith("/ws/") ||
+               path.startsWith("/error") ||      // <-- ¡IMPORTANTE! Para manejo de excepciones
+               path.startsWith("/api/contents"); // <-- ¡RUTA FALTANTE! Para crear contenido público
     }
 
     @Override

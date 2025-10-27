@@ -1,5 +1,6 @@
 package com.uade.tpo.marketplace.controllers;
 
+import com.uade.tpo.marketplace.entity.dto.ContentRequest;
 import com.uade.tpo.marketplace.entity.mongodb.Comentario;
 import com.uade.tpo.marketplace.entity.mongodb.Contenido;
 import com.uade.tpo.marketplace.service.CommentService;
@@ -12,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -25,9 +28,31 @@ public class ContentController {
     private final LikeService likeService;
 
     // POST /api/contents
+    // Modificado para usar ContentRequest DTO
     @PostMapping
-    public ResponseEntity<Contenido> uploadContent(@RequestBody Contenido content) {
-        Contenido saved = contentService.saveContent(content);
+    public ResponseEntity<Contenido> uploadContent(@RequestBody ContentRequest request) {
+
+        // 1. Mapear DTO a Entidad Contenido
+        Map<String, Object> metadatos = new HashMap<>();
+        // Añadimos la descripción al mapa de metadatos
+        if (request.getDescripcion() != null && !request.getDescripcion().isEmpty()) {
+            metadatos.put("descripcion", request.getDescripcion());
+        }
+        // Aquí podrías añadir más campos del DTO al mapa si fuera necesario
+
+        Contenido nuevoContenido = Contenido.builder()
+                .titulo(request.getTitle())
+                .tipo(request.getMediaType())
+                .urlArchivo(request.getMediaUrl())
+                .creadorId(request.getCreatorId())
+                .categoria(request.getCategory())
+                .etiquetas(request.getTags())
+                .metadatosEnriquecidos(metadatos)
+                .fechaPublicacion(LocalDateTime.now()) // Establecer la fecha de publicación en el servidor
+                .build();
+
+        // 2. Guardar la nueva entidad
+        Contenido saved = contentService.saveContent(nuevoContenido);
         return ResponseEntity.ok(saved);
     }
 
@@ -54,6 +79,8 @@ public class ContentController {
     }
 
     // PUT /api/contents/{id}
+    // NOTA: Este endpoint sigue aceptando la entidad completa.
+    // Considera crear un DTO 'UpdateContentRequest' similar para las actualizaciones.
     @PutMapping("/{id}")
     public ResponseEntity<Contenido> updateContent(
             @PathVariable String id,

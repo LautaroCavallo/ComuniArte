@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.neo4j.core.schema.Relationship.Direction;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.neo4j.core.schema.*;
 import java.util.HashSet;
 import java.util.Set;
@@ -13,14 +14,15 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Node("Usuario")
-public class Usuario {
+public class UsuarioNeo4j {
 
     @Id @GeneratedValue // ID interno de Neo4j
     private Long neo4jId;
 
     // ID de MongoDB para sincronización y consultas externas
-    @Property("user_id") 
-    private String userId; 
+    @Property("mongoUserId")
+    @Indexed(unique = true) // Importante para búsquedas rápidas
+    private String mongoUserId;
     
     // Propiedades adicionales del nodo...
     private String nombre;
@@ -49,4 +51,10 @@ public class Usuario {
     @Relationship(type = "ES_MIEMBRO_DE", direction = Direction.OUTGOING)
     @Builder.Default
     private Set<EsMiembroRelacion> membresias = new HashSet<>();
+
+    
+    public UsuarioNeo4j(String mongoUserId, String nombre) {
+        this.mongoUserId = mongoUserId;
+        this.nombre = nombre;
+    }
 }

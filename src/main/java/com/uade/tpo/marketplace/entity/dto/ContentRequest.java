@@ -9,10 +9,9 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class ContentRequest {
     private String title;
-    private String description;
+    private String descripcion;
     private String category;
     private String creatorId;
     private String mediaType;

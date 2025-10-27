@@ -1,7 +1,8 @@
 package com.uade.tpo.marketplace.service;
 
 import com.uade.tpo.marketplace.entity.neo4j.SigueRelacion;
-import com.uade.tpo.marketplace.entity.neo4j.Usuario;
+// Importa la entidad correcta de Neo4j
+import com.uade.tpo.marketplace.entity.neo4j.UsuarioNeo4j; 
 import com.uade.tpo.marketplace.repository.neo4j.UsuarioNeo4jRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,8 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+// Asegura que todas las transacciones de esta clase usan el gestor de Neo4j
+@Transactional("neo4jTransactionManager") 
 public class NetworkService {
 
     private final UsuarioNeo4jRepository usuarioNeo4jRepository;
@@ -23,18 +26,19 @@ public class NetworkService {
      * Un usuario comienza a seguir a otro creador
      */
     @Transactional
-    public void followUser(String followerId, String creatorId) {
-        log.info("Usuario {} sigue a {}", followerId, creatorId);
+    public void followUser(String followerMongoId, String creatorMongoId) {
+        log.info("Usuario {} sigue a {}", followerMongoId, creatorMongoId);
         
         // Buscar o crear nodos de usuarios en Neo4j
-        Usuario follower = findOrCreateUsuarioNode(followerId);
-        Usuario creator = findOrCreateUsuarioNode(creatorId);
+        UsuarioNeo4j follower = findOrCreateUsuarioNode(followerMongoId, "Usuario " + followerMongoId);
+        UsuarioNeo4j creator = findOrCreateUsuarioNode(creatorMongoId, "Usuario " + creatorMongoId);
         
         // Crear relación SIGUE
         SigueRelacion relacion = new SigueRelacion();
         relacion.setFechaInicio(LocalDateTime.now());
         relacion.setSeguido(creator);
         
+        // Añadir la relación al set del seguidor y guardar
         follower.getSeguidos().add(relacion);
         usuarioNeo4jRepository.save(follower);
         
@@ -45,44 +49,57 @@ public class NetworkService {
      * Un usuario deja de seguir a un creador
      */
     @Transactional
-    public void unfollowUser(String followerId, String creatorId) {
-        log.info("Usuario {} deja de seguir a {}", followerId, creatorId);
+    public void unfollowUser(String followerMongoId, String creatorMongoId) {
+        log.info("Usuario {} deja de seguir a {}", followerMongoId, creatorMongoId);
         
-        // Ejecutar query personalizada para eliminar la relación
-        usuarioNeo4jRepository.findSeguidos(followerId).stream()
-                .filter(u -> u.getUserId().equals(creatorId))
-                .findFirst()
-                .ifPresent(creator -> {
-                    Usuario follower = findOrCreateUsuarioNode(followerId);
-                    follower.getSeguidos().removeIf(rel -> 
-                        rel.getSeguido().getUserId().equals(creatorId));
-                    usuarioNeo4jRepository.save(follower);
-                });
+        // Carga el nodo del seguidor
+        Optional<UsuarioNeo4j> followerOpt = usuarioNeo4jRepository.findByMongoUserId(followerMongoId);
+        if (followerOpt.isEmpty()) {
+            log.warn("Se intentó dejar de seguir desde un usuario que no existe en Neo4j: {}", followerMongoId);
+            return;
+        }
+
+        UsuarioNeo4j follower = followerOpt.get();
+        // Elimina la relación del Set si el ID del "seguido" coincide
+        boolean removed = follower.getSeguidos().removeIf(relacion ->
+            // Usa el método correcto: getMongoUserId()
+            relacion.getSeguido().getMongoUserId().equals(creatorMongoId)
+        );
         
-        log.info("Relación SIGUE eliminada exitosamente");
+        if (removed) {
+            // Guarda la entidad follower actualizada (sin la relación)
+            usuarioNeo4jRepository.save(follower);
+            log.info("Relación SIGUE eliminada exitosamente");
+        } else {
+            log.info("No se encontró una relación SIGUE para eliminar entre {} y {}", followerMongoId, creatorMongoId);
+        }
     }
 
     /**
      * Obtiene la lista de seguidores de un usuario
+     * (Quién me sigue a mí)
      */
-    public List<String> getFollowers(String userId) {
-        log.info("Obteniendo seguidores de usuario {}", userId);
+    public List<String> getFollowers(String mongoUserId) {
+        log.info("Obteniendo seguidores de usuario {}", mongoUserId);
         
-        List<Usuario> seguidores = usuarioNeo4jRepository.findSeguidores(userId);
+        List<UsuarioNeo4j> seguidores = usuarioNeo4jRepository.findSeguidores(mongoUserId);
         return seguidores.stream()
-                .map(Usuario::getUserId)
+                // Usa el método correcto: getMongoUserId()
+                .map(UsuarioNeo4j::getMongoUserId) 
                 .collect(Collectors.toList());
     }
 
     /**
      * Obtiene la lista de creadores seguidos por un usuario
+     * (A quién sigo yo)
      */
-    public List<String> getFollowing(String userId) {
-        log.info("Obteniendo seguidos de usuario {}", userId);
+    public List<String> getFollowing(String mongoUserId) {
+        log.info("Obteniendo seguidos de usuario {}", mongoUserId);
         
-        List<Usuario> seguidos = usuarioNeo4jRepository.findSeguidos(userId);
+        List<UsuarioNeo4j> seguidos = usuarioNeo4jRepository.findSeguidos(mongoUserId);
         return seguidos.stream()
-                .map(Usuario::getUserId)
+                // Usa el método correcto: getMongoUserId()
+                .map(UsuarioNeo4j::getMongoUserId)
                 .collect(Collectors.toList());
     }
 
@@ -90,20 +107,25 @@ public class NetworkService {
      * Genera recomendaciones de creadores o contenidos según cercanía de red
      * Algoritmo: Recomienda usuarios seguidos por los usuarios que yo sigo (amigos de amigos)
      */
-    public List<String> getRecommendations(String userId) {
-        log.info("Generando recomendaciones para usuario {}", userId);
+    public List<String> getRecommendations(String mongoUserId) {
+        log.info("Generando recomendaciones para usuario {}", mongoUserId);
         
         // Obtener usuarios seguidos por el usuario actual
-        List<Usuario> seguidos = usuarioNeo4jRepository.findSeguidos(userId);
+        List<UsuarioNeo4j> seguidos = usuarioNeo4jRepository.findSeguidos(mongoUserId);
+        Set<String> seguidosIds = seguidos.stream()
+                                         .map(UsuarioNeo4j::getMongoUserId)
+                                         .collect(Collectors.toSet());
         
         // Obtener usuarios seguidos por cada uno de los seguidos (amigos de amigos)
         Set<String> recomendaciones = new HashSet<>();
-        for (Usuario seguido : seguidos) {
-            List<Usuario> amigosDeAmigos = usuarioNeo4jRepository.findSeguidos(seguido.getUserId());
+        for (UsuarioNeo4j seguido : seguidos) {
+            // Usa el método correcto: getMongoUserId()
+            List<UsuarioNeo4j> amigosDeAmigos = usuarioNeo4jRepository.findSeguidos(seguido.getMongoUserId());
             amigosDeAmigos.stream()
-                    .map(Usuario::getUserId)
-                    .filter(id -> !id.equals(userId)) // Excluir al usuario actual
-                    .filter(id -> seguidos.stream().noneMatch(s -> s.getUserId().equals(id))) // Excluir ya seguidos
+                    // Usa el método correcto: getMongoUserId()
+                    .map(UsuarioNeo4j::getMongoUserId)
+                    .filter(id -> !id.equals(mongoUserId)) // Excluir al usuario actual
+                    .filter(id -> !seguidosIds.contains(id)) // Excluir usuarios que ya sigo
                     .forEach(recomendaciones::add);
         }
         
@@ -118,26 +140,30 @@ public class NetworkService {
         log.info("Generando grafo de red social");
         
         // Obtener todos los usuarios y sus relaciones
-        List<Usuario> todosUsuarios = (List<Usuario>) usuarioNeo4jRepository.findAll();
+        List<UsuarioNeo4j> todosUsuarios = (List<UsuarioNeo4j>) usuarioNeo4jRepository.findAll();
         
         Map<String, Object> grafo = new HashMap<>();
         List<Map<String, String>> nodos = new ArrayList<>();
         List<Map<String, String>> enlaces = new ArrayList<>();
         
-        for (Usuario usuario : todosUsuarios) {
+        for (UsuarioNeo4j usuario : todosUsuarios) {
             // Agregar nodo
             Map<String, String> nodo = new HashMap<>();
-            nodo.put("id", usuario.getUserId());
+            // Usa el método correcto: getMongoUserId()
+            nodo.put("id", usuario.getMongoUserId()); 
             nodo.put("nombre", usuario.getNombre());
             nodos.add(nodo);
             
             // Agregar enlaces (relaciones SIGUE)
-            for (SigueRelacion relacion : usuario.getSeguidos()) {
-                Map<String, String> enlace = new HashMap<>();
-                enlace.put("source", usuario.getUserId());
-                enlace.put("target", relacion.getSeguido().getUserId());
-                enlace.put("type", "SIGUE");
-                enlaces.add(enlace);
+            if (usuario.getSeguidos() != null) {
+                for (SigueRelacion relacion : usuario.getSeguidos()) {
+                    Map<String, String> enlace = new HashMap<>();
+                    // Usa el método correcto: getMongoUserId()
+                    enlace.put("source", usuario.getMongoUserId());
+                    enlace.put("target", relacion.getSeguido().getMongoUserId());
+                    enlace.put("type", "SIGUE");
+                    enlaces.add(enlace);
+                }
             }
         }
         
@@ -150,17 +176,20 @@ public class NetworkService {
 
     /**
      * Método auxiliar para buscar o crear un nodo de usuario en Neo4j
+     * @param mongoUserId El ID del usuario en MongoDB
+     * @param nombre (Opcional) El nombre a usar si el nodo se crea
      */
-    private Usuario findOrCreateUsuarioNode(String userId) {
-        // Buscar por userId (el ID de MongoDB)
-        return usuarioNeo4jRepository.findAll().stream()
-                .filter(u -> u.getUserId() != null && u.getUserId().equals(userId))
-                .findFirst()
+    private UsuarioNeo4j findOrCreateUsuarioNode(String mongoUserId, String nombre) {
+        // Buscar por mongoUserId (el ID de MongoDB)
+        return usuarioNeo4jRepository.findByMongoUserId(mongoUserId)
                 .orElseGet(() -> {
-                    Usuario nuevoUsuario = new Usuario();
-                    nuevoUsuario.setUserId(userId);
-                    nuevoUsuario.setNombre("Usuario " + userId); // Placeholder
+                    // Si no existe, lo crea.
+                    // El 'nombre' es un placeholder 
+                    String nombreAMostrar = (nombre != null) ? nombre : "Usuario " + mongoUserId;
+                    UsuarioNeo4j nuevoUsuario = new UsuarioNeo4j(mongoUserId, nombreAMostrar);
+                    log.info("Creando nodo sombra en Neo4j para usuario: {}", mongoUserId);
                     return usuarioNeo4jRepository.save(nuevoUsuario);
                 });
     }
 }
+

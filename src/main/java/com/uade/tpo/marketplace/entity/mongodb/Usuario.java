@@ -3,6 +3,8 @@ package com.uade.tpo.marketplace.entity.mongodb;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.uade.tpo.marketplace.entity.Rol;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,7 +27,7 @@ public class Usuario {
     private String nombre;
     private String email;
     private String tipoUsuario; // 'espectador' o 'creador'
-    private String rol; // Align with mongo validator: ESPECTADOR/CREADOR/ADMIN
+    private Rol rol; // Align with mongo validator: ESPECTADOR/CREADOR/ADMIN
     private String region;
     private List<String> intereses;
     private Map<String, String> perfilRedes; // Ej: {"instagram": "url", "twitter": "url"}

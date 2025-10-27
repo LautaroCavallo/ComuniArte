@@ -4,12 +4,8 @@ import com.uade.tpo.marketplace.entity.mongodb.Contenido;
 import com.uade.tpo.marketplace.repository.mongodb.ContenidoRepository;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
-import java.util.UUID;
 
 @Service
 public class ContentService {
@@ -20,9 +16,13 @@ public class ContentService {
         this.contenidoRepository = contenidoRepository;
     }
 
-    // Crear contenido
+    /**
+     * Guarda un nuevo contenido.
+     * La lógica de mapeo de DTO y la asignación de fechaPublicacion
+     * ahora se manejan en el ContentController.
+     */
     public Contenido saveContent(Contenido content) {
-        content.setFechaPublicacion(LocalDateTime.now());
+        // La fecha de publicación ahora la asigna el controlador
         return contenidoRepository.save(content);
     }
 
@@ -41,6 +41,7 @@ public class ContentService {
                         existingContent.setUrlArchivo(updatedContent.getUrlArchivo());
                     }
                     if (updatedContent.getMetadatosEnriquecidos() != null) {
+                        // Considera "mergear" los mapas en lugar de reemplazar
                         existingContent.setMetadatosEnriquecidos(updatedContent.getMetadatosEnriquecidos());
                     }
                     if (updatedContent.getCategoria() != null) {
@@ -64,7 +65,7 @@ public class ContentService {
         return contenidoRepository.findById(id);
     }
 
-    // Buscar por filtros opcionales
+    // Buscar por filtros opcionales (simple)
     public List<Contenido> findContents(String category, String creatorId) {
         if (category != null && creatorId != null) {
             return contenidoRepository.findByCategoriaAndCreadorId(category, creatorId);
@@ -76,105 +77,35 @@ public class ContentService {
             return contenidoRepository.findAll();
         }
     }
-    public List<Contenido> findContentsWithFilters(String category, String creatorId, String mediaType, String tag, int page, int size) {
-        // Por ahora: filtrado simple en memoria (hasta tener query específica o Pageable)
+
+    /**
+     * Busca contenidos con filtros paginados.
+     * Modificado para usar 'type' en lugar de 'mediaType' para coincidir con el Controller.
+     */
+    public List<Contenido> findContentsWithFilters(String category, String creatorId, String type, String tag, int page, int size) {
+        // TODO: Implementar esto con Criteria API o una @Query de Mongo para paginación
+        // El filtrado en memoria es ineficiente para grandes volúmenes de datos.
         List<Contenido> allContents = contenidoRepository.findAll();
 
         return allContents.stream()
                 .filter(c -> category == null || c.getCategoria().equalsIgnoreCase(category))
                 .filter(c -> creatorId == null || c.getCreadorId().equalsIgnoreCase(creatorId))
-                .filter(c -> mediaType == null || c.getTipo().equalsIgnoreCase(mediaType))
+                .filter(c -> type == null || (c.getTipo() != null && c.getTipo().equalsIgnoreCase(type)))
                 .filter(c -> tag == null || (c.getEtiquetas() != null && c.getEtiquetas().contains(tag)))
                 .skip((long) page * size)
                 .limit(size)
                 .toList();
     }
 
-    // Incrementar contador de vistas (puede integrarse con Redis más adelante)
+    // Incrementar contador de vistas (placeholder)
     public void incrementViewCount(String contentId) {
-        // Si integrás Redis, podés descomentar algo como:
-        // String key = VIEW_COUNT_KEY_PREFIX + contentId;
+        // Lógica para incrementar vistas (ej. con Redis o en un campo del documento)
+        // String key = "view_count::" + contentId;
         // redisTemplate.opsForValue().increment(key);
     }
 
-
-    // COMMENTS
-    public List<CommentResponse> getComments(String contentId) {
-        // TODO: fetch from CommentRepository when available
-        return new ArrayList<>();
-    }
-
-    public CommentResponse addComment(String contentId, CommentRequest request) {
-        CommentResponse response = new CommentResponse();
-        response.id = UUID.randomUUID().toString();
-        response.userId = request.userId;
-        response.text = request.text;
-        response.createdAt = LocalDateTime.now().toString();
-        return response;
-    }
-
-    // REACTIONS
-    public ReactionResponse reactToContent(String id, ReactionRequest request) {
-        ReactionResponse resp = new ReactionResponse();
-        resp.contentId = id;
-        resp.totalLikes = new Random().nextInt(500); // mock placeholder
-        resp.totalReactions = resp.totalLikes;
-        return resp;
-    }
-
-    // LIVE
-    public LiveResponse startLive(LiveStartRequest request) {
-        LiveResponse resp = new LiveResponse();
-        resp.liveId = UUID.randomUUID().toString();
-        resp.status = "STARTED";
-        resp.startedAt = LocalDateTime.now().toString();
-        return resp;
-    }
-
-    public Optional<LiveResponse> endLive(String id) {
-        LiveResponse resp = new LiveResponse();
-        resp.liveId = id;
-        resp.status = "ENDED";
-        resp.endedAt = LocalDateTime.now().toString();
-        return Optional.of(resp);
-    }
-
-    // DTOs (mover a paquete dto)
-    public static class CommentRequest {
-        public String userId;
-        public String text;
-    }
-
-    public static class CommentResponse {
-        public String id;
-        public String userId;
-        public String text;
-        public String createdAt;
-    }
-
-    public static class ReactionRequest {
-        public String userId;
-        public String reactionType;
-    }
-
-    public static class ReactionResponse {
-        public String contentId;
-        public long totalLikes;
-        public long totalReactions;
-    }
-
-    public static class LiveStartRequest {
-        public String creatorId;
-        public String title;
-        public String language;
-        public String region;
-    }
-
-    public static class LiveResponse {
-        public String liveId;
-        public String contentId;
-        public String status;
-        public String startedAt;
-        public String endedAt;
-    }
+    // --- MÉTODOS MOCK ELIMINADOS ---
+    // Los métodos getComments, addComment, reactToContent, startLive, endLive
+    // y sus DTOs internos han sido eliminados, ya que el Controller
+    // utiliza CommentService y LikeService dedicados.
 }
