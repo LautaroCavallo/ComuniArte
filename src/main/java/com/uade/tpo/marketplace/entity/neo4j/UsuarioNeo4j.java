@@ -34,7 +34,7 @@ public class UsuarioNeo4j {
 
     @Relationship(type = "CREO", direction = Direction.OUTGOING)
     @Builder.Default
-    private Set<Contenido> contenidoCreado = new HashSet<>();
+    private Set<ContenidoNeo4j> contenidoCreado = new HashSet<>();
 
     @Relationship(type = "VIO", direction = Direction.OUTGOING)
     @Builder.Default
@@ -42,7 +42,7 @@ public class UsuarioNeo4j {
 
     @Relationship(type = "GUSTA", direction = Direction.OUTGOING)
     @Builder.Default
-    private Set<Contenido> gustos = new HashSet<>(); // No tiene propiedades, mapeo directo
+    private Set<ContenidoNeo4j> gustos = new HashSet<>(); // No tiene propiedades, mapeo directo
 
     @Relationship(type = "COLABORA_EN", direction = Direction.OUTGOING)
     @Builder.Default

@@ -13,7 +13,7 @@ public class ColaboraRelacion {
     private String rol;
 
     @TargetNode
-    private Contenido targetContenido;
+    private ContenidoNeo4j targetContenido;
 
     // Constructor, Getters y Setters...
 }

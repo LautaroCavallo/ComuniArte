@@ -15,7 +15,7 @@ public class VioRelacion {
     private LocalDateTime fecha_ultima_vista;
 
     @TargetNode
-    private Contenido targetContenido;
+    private ContenidoNeo4j targetContenido;
 
     // Constructor, Getters y Setters...
 }

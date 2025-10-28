@@ -2,28 +2,70 @@ package com.uade.tpo.marketplace.service;
 
 import com.uade.tpo.marketplace.entity.mongodb.Contenido;
 import com.uade.tpo.marketplace.repository.mongodb.ContenidoRepository;
+import com.uade.tpo.marketplace.repository.mongodb.OutboxEvent;
+import com.uade.tpo.marketplace.repository.mongodb.OutboxEventRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
+@Slf4j // Añadir para logging
 @Service
+@RequiredArgsConstructor // Usar inyección por constructor
 public class ContentService {
 
     private final ContenidoRepository contenidoRepository;
-
-    public ContentService(ContenidoRepository contenidoRepository) {
-        this.contenidoRepository = contenidoRepository;
-    }
+    private final OutboxEventRepository outboxEventRepository; // Inyectar repo Outbox
 
     /**
      * Guarda un nuevo contenido.
      * La lógica de mapeo de DTO y la asignación de fechaPublicacion
      * ahora se manejan en el ContentController.
      */
-    public Contenido saveContent(Contenido content) {
-        // La fecha de publicación ahora la asigna el controlador
-        return contenidoRepository.save(content);
+     public Contenido saveContent(Contenido content) {
+        // 1. Guardar en MongoDB (se confirma al instante)
+        Contenido savedMongoContent = contenidoRepository.save(content);
+
+        // --- INICIO LÓGICA OUTBOX ---
+        // 2. Crear el evento Outbox (Mejor esfuerzo)
+        try {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("contentId", savedMongoContent.getId());
+            payload.put("titulo", savedMongoContent.getTitulo()); // Útil para depurar
+
+            var outboxEvent = OutboxEvent.builder()
+                    .eventType("CONTENT_CREATED") // Nuevo tipo de evento
+                    .payload(payload)
+                    .createdAt(Instant.now())
+                    .processed(false)
+                    .retryCount(0)
+                    .build();
+
+            outboxEventRepository.save(outboxEvent); // Guardado separado
+            log.info("Evento Outbox CONTENT_CREATED generado para contenido {}", savedMongoContent.getId());
+
+        } catch (Exception e) {
+            // ¡MITIGACIÓN DE RIESGO!
+            log.error(
+                "¡FALLO CRÍTICO DE OUTBOX! El contenido {} ({}) fue creado en MongoDB pero falló la creación de su OutboxEvent. " +
+                "El nodo en Neo4j NO se creará automáticamente. Error: {}",
+                savedMongoContent.getId(),
+                savedMongoContent.getTitulo(),
+                e.getMessage()
+            );
+            // No lanzamos excepción, el guardado en Mongo fue exitoso.
+        }
+        // --- FIN LÓGICA OUTBOX ---
+
+        // 3. Devolver el contenido guardado en Mongo
+        return savedMongoContent;
     }
 
     // Actualizar contenido existente
@@ -57,7 +99,40 @@ public class ContentService {
 
     // Eliminar contenido
     public void deleteContent(String id) {
+        // Verificar si existe antes de intentar eliminar (evita errores si ya no está)
+        Optional<Contenido> contentOptional = contenidoRepository.findById(id);
+        if (contentOptional.isEmpty()) {
+            log.warn("Intento de eliminar contenido con ID {} que no existe.", id);
+            return; // No hacer nada si no existe
+        }
+
         contenidoRepository.deleteById(id);
+        log.info("Contenido {} eliminado de MongoDB.", id);
+
+
+        // --- INICIO LÓGICA OUTBOX ---
+        // Generar evento para eliminar nodo en Neo4j
+        try {
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("contentId", id);
+
+            var outboxEvent = OutboxEvent.builder()
+                    .eventType("CONTENT_DELETED")
+                    .payload(payload)
+                    .createdAt(Instant.now())
+                    .processed(false)
+                    .retryCount(0)
+                    .build();
+            outboxEventRepository.save(outboxEvent);
+            log.info("Evento Outbox CONTENT_DELETED generado para contenido {}", id);
+        } catch (Exception e) {
+             log.error(
+                "¡FALLO CRÍTICO DE OUTBOX! El contenido {} fue eliminado en MongoDB pero falló la creación de su OutboxEvent 'CONTENT_DELETED'. " +
+                "El nodo en Neo4j NO se eliminará automáticamente. Error: {}",
+                id, e.getMessage()
+            );
+        }
+        // --- FIN LÓGICA OUTBOX ---
     }
 
     // Obtener por ID

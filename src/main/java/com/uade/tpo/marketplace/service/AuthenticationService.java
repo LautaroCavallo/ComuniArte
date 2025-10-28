@@ -18,6 +18,7 @@ import com.uade.tpo.marketplace.controllers.auth.RegisterRequest;
 import com.uade.tpo.marketplace.controllers.config.JWTService;
 import com.uade.tpo.marketplace.entity.Rol;
 import com.uade.tpo.marketplace.entity.mongodb.Usuario;
+import com.uade.tpo.marketplace.repository.mongodb.OutboxEvent;
 import com.uade.tpo.marketplace.repository.mongodb.OutboxEventRepository;
 import com.uade.tpo.marketplace.repository.mongodb.UsuarioRepository;
 

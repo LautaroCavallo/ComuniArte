@@ -1,4 +1,4 @@
-package com.uade.tpo.marketplace.service;
+package com.uade.tpo.marketplace.repository.mongodb;
 
 import lombok.Builder;
 import lombok.Data;
