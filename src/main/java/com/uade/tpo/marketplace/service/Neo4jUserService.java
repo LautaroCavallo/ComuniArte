@@ -16,9 +16,18 @@ public class Neo4jUserService {
     private final UsuarioNeo4jRepository neo4jRepository;
 
     public void createUsuarioNeo4j(String mongoId, String nombre) {
+        createUsuarioNeo4j(mongoId, nombre, "ESPECTADOR"); // default
+    }
+    
+    public void createUsuarioNeo4j(String mongoId, String nombre, String tipoUsuario) {
         if (neo4jRepository.findByMongoUserId(mongoId).isEmpty()) {
-            UsuarioNeo4j neo4jNode = new UsuarioNeo4j(mongoId, nombre);
+            UsuarioNeo4j neo4jNode = new UsuarioNeo4j(mongoId, nombre, tipoUsuario);
             neo4jRepository.save(neo4jNode);
+        } else {
+            // Si ya existe, actualizar el tipo de usuario (por si cambió)
+            UsuarioNeo4j existing = neo4jRepository.findByMongoUserId(mongoId).get();
+            existing.setTipoUsuario(tipoUsuario);
+            neo4jRepository.save(existing);
         }
     }
 }

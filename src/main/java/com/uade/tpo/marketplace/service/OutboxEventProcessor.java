@@ -103,11 +103,13 @@ public class OutboxEventProcessor {
     private void processUserRegistration(Map<String, Object> payload) {
         String userId = (String) payload.get("userId");
         String nombre = (String) payload.get("nombre");
-        log.info("Procesando evento USER_REGISTERED. Payload: userId={}, nombre={}", userId, nombre);
+        String tipoUsuario = (String) payload.get("tipoUsuario");
+        log.info("Procesando evento USER_REGISTERED. Payload: userId={}, nombre={}, tipoUsuario={}", userId, nombre, tipoUsuario);
         if (userId == null || nombre == null) {
             throw new IllegalArgumentException("Payload incompleto para USER_REGISTERED: falta userId o nombre.");
         }
-        neo4jUserService.createUsuarioNeo4j(userId, nombre);
+        // Si no viene tipoUsuario por alguna razón, usar ESPECTADOR por defecto
+        neo4jUserService.createUsuarioNeo4j(userId, nombre, tipoUsuario != null ? tipoUsuario : "ESPECTADOR");
     }
 
     /** 3. NUEVO: Lógica para CONTENT_CREATED */

@@ -1,0 +1,883 @@
+{
+  "info": {
+    "name": "ComuniArte - API Completa",
+    "_postman_id": "comuniarte-complete-2024",
+    "description": "Colección completa de todos los endpoints de ComuniArte para demostración",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "🔐 1. Autenticación",
+      "item": [
+        {
+          "name": "1.1 Registrar Usuario (Creador)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"jwt_token\", jsonData.token);",
+                  "    console.log(\"Token guardado: \" + jsonData.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Demo Profesor\",\n  \"email\": \"profesor@uade.edu.ar\",\n  \"password\": \"demo123\",\n  \"region\": \"Argentina\",\n  \"tipoUsuario\": \"creador\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "register"]
+            }
+          }
+        },
+        {
+          "name": "1.2 Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"jwt_token\", jsonData.token);",
+                  "    console.log(\"Token actualizado: \" + jsonData.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"profesor@uade.edu.ar\",\n  \"password\": \"demo123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "login"]
+            }
+          }
+        },
+        {
+          "name": "1.3 Health Check",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/health",
+              "host": ["{{base_url}}"],
+              "path": ["api", "health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📄 2. Gestión de Contenidos",
+      "item": [
+        {
+          "name": "2.1 Crear Contenido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"content_id\", jsonData.id || jsonData._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Festival de Música Andina\",\n  \"description\": \"Transmisión en vivo desde Tilcara, Jujuy\",\n  \"category\": \"Música\",\n  \"creatorId\": \"{{user_id}}\",\n  \"mediaType\": \"video\",\n  \"mediaUrl\": \"https://stream.comuniarte.org/andina-festival.mp4\",\n  \"tags\": [\"andina\", \"folklore\", \"tilcara\", \"jujuy\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/contents",
+              "host": ["{{base_url}}"],
+              "path": ["api", "contents"]
+            }
+          }
+        },
+        {
+          "name": "2.2 Obtener Contenido por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/contents/{{content_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "contents", "{{content_id}}"]
+            }
+          }
+        },
+        {
+          "name": "2.3 Buscar Contenidos (con filtros)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/contents?category=Música",
+              "host": ["{{base_url}}"],
+              "path": ["api", "contents"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "Música"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.4 Actualizar Contenido",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Festival de Música Andina - ACTUALIZADO\",\n  \"description\": \"Nueva descripción del evento\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/contents/{{content_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "contents", "{{content_id}}"]
+            }
+          }
+        },
+        {
+          "name": "2.5 Agregar Comentario",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuarioId\": \"{{user_id}}\",\n  \"texto\": \"¡Excelente contenido! Me encantó la música andina.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/contents/{{content_id}}/comments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "contents", "{{content_id}}", "comments"]
+            }
+          }
+        },
+        {
+          "name": "2.6 Ver Comentarios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/contents/{{content_id}}/comments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "contents", "{{content_id}}", "comments"]
+            }
+          }
+        },
+        {
+          "name": "2.7 Dar Like",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/contents/{{content_id}}/like?usuarioId={{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "contents", "{{content_id}}", "like"],
+              "query": [
+                {
+                  "key": "usuarioId",
+                  "value": "{{user_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.8 Contar Likes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/contents/{{content_id}}/likes",
+              "host": ["{{base_url}}"],
+              "path": ["api", "contents", "{{content_id}}", "likes"]
+            }
+          }
+        },
+        {
+          "name": "2.9 Eliminar Contenido",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/contents/{{content_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "contents", "{{content_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "👤 3. Gestión de Usuarios",
+      "item": [
+        {
+          "name": "3.1 Obtener Perfil",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{user_id}}"]
+            }
+          }
+        },
+        {
+          "name": "3.2 Actualizar Perfil",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bio\": \"Profesor de Bases de Datos avanzadas\",\n  \"region\": \"Buenos Aires, Argentina\",\n  \"intereses\": [\"música\", \"cultura\", \"tecnología\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{user_id}}"]
+            }
+          }
+        },
+        {
+          "name": "3.3 Ver Historial",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/users/{{user_id}}/history",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{user_id}}", "history"]
+            }
+          }
+        },
+        {
+          "name": "3.4 Obtener Listas Personalizadas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/users/{{user_id}}/lists",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{user_id}}", "lists"]
+            }
+          }
+        },
+        {
+          "name": "3.5 Crear Lista Personalizada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Música Folklórica Favorita\",\n  \"descripcion\": \"Mi colección de folklore latinoamericano\",\n  \"esPublica\": true,\n  \"contenidoIds\": []\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/{{user_id}}/lists",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "{{user_id}}", "lists"]
+            }
+          }
+        },
+        {
+          "name": "3.6 Segmentar Usuarios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/users/segment?region=Argentina&tipo=creador",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "segment"],
+              "query": [
+                {
+                  "key": "region",
+                  "value": "Argentina"
+                },
+                {
+                  "key": "tipo",
+                  "value": "creador"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🌐 4. Red Social (Neo4j)",
+      "item": [
+        {
+          "name": "4.1 Seguir Usuario",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/network/follow?followerId={{user_id}}&creatorId={{creator_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "network", "follow"],
+              "query": [
+                {
+                  "key": "followerId",
+                  "value": "{{user_id}}"
+                },
+                {
+                  "key": "creatorId",
+                  "value": "{{creator_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.2 Dejar de Seguir",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/network/unfollow?followerId={{user_id}}&creatorId={{creator_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "network", "unfollow"],
+              "query": [
+                {
+                  "key": "followerId",
+                  "value": "{{user_id}}"
+                },
+                {
+                  "key": "creatorId",
+                  "value": "{{creator_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.3 Ver Seguidores",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/network/followers/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "network", "followers", "{{user_id}}"]
+            }
+          }
+        },
+        {
+          "name": "4.4 Ver Siguiendo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/network/following/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "network", "following", "{{user_id}}"]
+            }
+          }
+        },
+        {
+          "name": "4.5 Recomendaciones",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/network/recommendations/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "network", "recommendations", "{{user_id}}"]
+            }
+          }
+        },
+        {
+          "name": "4.6 Grafo Completo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/network/graph",
+              "host": ["{{base_url}}"],
+              "path": ["api", "network", "graph"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📡 5. Transmisiones en Vivo",
+      "item": [
+        {
+          "name": "5.1 Iniciar Transmisión",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"live_id\", jsonData.id || jsonData._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"creadorId\": \"{{user_id}}\",\n  \"titulo\": \"En Vivo: Festival de Folklore\",\n  \"descripcion\": \"Transmisión en directo desde Salta\",\n  \"categoria\": \"Música\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/live/start",
+              "host": ["{{base_url}}"],
+              "path": ["api", "live", "start"]
+            }
+          }
+        },
+        {
+          "name": "5.2 Obtener Transmisión",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/live/{{live_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "live", "{{live_id}}"]
+            }
+          }
+        },
+        {
+          "name": "5.3 Ver Transmisiones Activas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/live/active",
+              "host": ["{{base_url}}"],
+              "path": ["api", "live", "active"]
+            }
+          }
+        },
+        {
+          "name": "5.4 Enviar Mensaje Chat",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mensaje\": \"¡Saludos desde Buenos Aires!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/live/{{live_id}}/chat?userId={{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "live", "{{live_id}}", "chat"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{user_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.5 Ver Chat",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/live/{{live_id}}/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "live", "{{live_id}}", "chat"]
+            }
+          }
+        },
+        {
+          "name": "5.6 Enviar Donación",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/live/{{live_id}}/donate?userId={{user_id}}&amount=100&message=Excelente show!",
+              "host": ["{{base_url}}"],
+              "path": ["api", "live", "{{live_id}}", "donate"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{user_id}}"
+                },
+                {
+                  "key": "amount",
+                  "value": "100"
+                },
+                {
+                  "key": "message",
+                  "value": "Excelente show!"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.7 Enviar Pregunta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pregunta\": \"¿Cuál es el origen de esta melodía?\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/live/{{live_id}}/questions?userId={{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "live", "{{live_id}}", "questions"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{user_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.8 Ver Espectadores Activos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/live/{{live_id}}/viewers",
+              "host": ["{{base_url}}"],
+              "path": ["api", "live", "{{live_id}}", "viewers"]
+            }
+          }
+        },
+        {
+          "name": "5.9 Contar Espectadores",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/live/{{live_id}}/viewers/count",
+              "host": ["{{base_url}}"],
+              "path": ["api", "live", "{{live_id}}", "viewers", "count"]
+            }
+          }
+        },
+        {
+          "name": "5.10 Finalizar Transmisión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/live/{{live_id}}/end",
+              "host": ["{{base_url}}"],
+              "path": ["api", "live", "{{live_id}}", "end"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📊 6. Analytics",
+      "item": [
+        {
+          "name": "6.1 Registrar Vista",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/analytics/views?contentId={{content_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "analytics", "views"],
+              "query": [
+                {
+                  "key": "contentId",
+                  "value": "{{content_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6.2 Métricas de Contenido",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/analytics/content/{{content_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "analytics", "content", "{{content_id}}"]
+            }
+          }
+        },
+        {
+          "name": "6.3 Métricas de Creador",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/analytics/creator/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "analytics", "creator", "{{user_id}}"]
+            }
+          }
+        },
+        {
+          "name": "6.4 Ranking de Popularidad",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/analytics/ranking?category=Música&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "analytics", "ranking"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "Música"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6.5 Impacto por Región",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/analytics/impact?region=Argentina",
+              "host": ["{{base_url}}"],
+              "path": ["api", "analytics", "impact"],
+              "query": [
+                {
+                  "key": "region",
+                  "value": "Argentina"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6.6 Reporte Personalizado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"contenidos_populares\",\n  \"periodo\": \"ultimo_mes\",\n  \"region\": \"Argentina\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reports/custom",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reports", "custom"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "⚙️ 7. Sistema y Monitoreo",
+      "item": [
+        {
+          "name": "7.1 Estado del Sistema",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/system/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "system", "status"]
+            }
+          }
+        },
+        {
+          "name": "7.2 Configuración del Sistema",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/system/config",
+              "host": ["{{base_url}}"],
+              "path": ["api", "system", "config"]
+            }
+          }
+        },
+        {
+          "name": "7.3 Métricas del Sistema",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/system/metrics",
+              "host": ["{{base_url}}"],
+              "path": ["api", "system", "metrics"]
+            }
+          }
+        },
+        {
+          "name": "7.4 Ver Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/system/logs?level=INFO&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "system", "logs"],
+              "query": [
+                {
+                  "key": "level",
+                  "value": "INFO"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7.5 Logs de Redis",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/system/logs/redis?limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "system", "logs", "redis"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7.6 Estadísticas de Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/system/logs/statistics",
+              "host": ["{{base_url}}"],
+              "path": ["api", "system", "logs", "statistics"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ]
+}
+

@@ -26,6 +26,7 @@ public class UsuarioNeo4j {
     
     // Propiedades adicionales del nodo...
     private String nombre;
+    private String tipoUsuario; // 'creador' o 'espectador'
 
     // Relaciones: Mapeamos los campos a las clases de relación
     @Relationship(type = "SIGUE", direction = Direction.OUTGOING)
@@ -56,5 +57,12 @@ public class UsuarioNeo4j {
     public UsuarioNeo4j(String mongoUserId, String nombre) {
         this.mongoUserId = mongoUserId;
         this.nombre = nombre;
+        this.tipoUsuario = "ESPECTADOR"; // default
+    }
+    
+    public UsuarioNeo4j(String mongoUserId, String nombre, String tipoUsuario) {
+        this.mongoUserId = mongoUserId;
+        this.nombre = nombre;
+        this.tipoUsuario = tipoUsuario;
     }
 }
