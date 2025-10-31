@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -52,7 +51,7 @@ public AuthenticationResponse register(RegisterRequest request) {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .fechaRegistro(fechaRegistro)
                 .tipoUsuario("espectador")
-                .rol(request.getRol())
+                .rol(request.getRol() != null ? request.getRol() : Rol.ESPECTADOR)
                 .build();
 
         // 3. Guardar en MongoDB (Esto se confirma/commit al instante)
@@ -63,6 +62,7 @@ public AuthenticationResponse register(RegisterRequest request) {
             Map<String, Object> payload = new HashMap<>();
             payload.put("userId", savedMongoUser.getId());
             payload.put("nombre", savedMongoUser.getNombre());
+            payload.put("tipoUsuario", savedMongoUser.getRol().name()); // Agregar rol en MAYÚSCULAS
 
             var outboxEvent = OutboxEvent.builder()
                     .eventType("USER_REGISTERED")

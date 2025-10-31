@@ -23,6 +23,7 @@ public class ContentService {
 
     private final ContenidoRepository contenidoRepository;
     private final OutboxEventRepository outboxEventRepository; // Inyectar repo Outbox
+    private final LogService logService;
 
     /**
      * Guarda un nuevo contenido.
@@ -30,8 +31,16 @@ public class ContentService {
      * ahora se manejan en el ContentController.
      */
      public Contenido saveContent(Contenido content) {
+        // Log de creación
+        logService.logInfo("MONGODB", "ContentService", "saveContent", "CREATE_CONTENT",
+            "Creando nuevo contenido: " + content.getTitulo(), null, null, null);
+            
         // 1. Guardar en MongoDB (se confirma al instante)
         Contenido savedMongoContent = contenidoRepository.save(content);
+        
+        logService.logInfo("MONGODB", "ContentService", "saveContent", "CONTENT_CREATED",
+            "Contenido creado exitosamente: " + savedMongoContent.getTitulo(), 
+            null, savedMongoContent.getId(), null);
 
         // --- INICIO LÓGICA OUTBOX ---
         // 2. Crear el evento Outbox (Mejor esfuerzo)

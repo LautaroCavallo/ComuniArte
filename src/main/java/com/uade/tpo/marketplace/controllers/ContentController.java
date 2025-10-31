@@ -63,6 +63,20 @@ public class ContentController {
         return ResponseEntity.ok(saved);
     }
 
+    // GET /api/contents?category=&tag=&creatorId=&type=&page=&size=
+    @GetMapping
+    public ResponseEntity<List<Contenido>> getContents(
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String tag,
+            @RequestParam(required = false) String creatorId,
+            @RequestParam(required = false) String type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        List<Contenido> results = contentService.findContentsWithFilters(category, tag, creatorId, type, page, size);
+        return ResponseEntity.ok(results);
+    }
+
     // GET /api/contents/{id}
     @GetMapping("/{id}")
     public ResponseEntity<Contenido> getContentById(@PathVariable String id) {
@@ -139,17 +153,17 @@ public class ContentController {
 
     // ========== LIKES / REACCIONES ==========
 
-    // POST /api/contents/{id}/like
+    // POST /api/contents/{id}/like?usuarioId=xxx
     @PostMapping("/{id}/like")
     public ResponseEntity<LikeResponse> likeContent(
             @PathVariable String id,
-            @RequestBody LikeRequest request) {
+            @RequestParam String usuarioId) {
         
-        boolean success = likeService.likeContent(request.getUsuarioId(), id);
+        boolean success = likeService.likeContent(usuarioId, id);
         
         LikeResponse response = new LikeResponse();
         response.setContentId(id);
-        response.setUserId(request.getUsuarioId());
+        response.setUserId(usuarioId);
         response.setSuccess(success);
         response.setMessage(success ? "Like registrado exitosamente" : "Ya había dado like a este contenido");
         response.setTotalLikes(likeService.getLikesCount(id));

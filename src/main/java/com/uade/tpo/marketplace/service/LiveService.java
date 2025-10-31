@@ -25,6 +25,7 @@ public class LiveService {
     private final TransaccionRepository transaccionRepository;
     private final TransmisionRepository transmisionRepository;
     private final ContenidoRepository contenidoRepository;
+    private final LogService logService;
 
     private static final String LIVE_CHAT_PREFIX = "live:comentarios:";
     private static final String LIVE_VIEWERS_PREFIX = "live:viewers:";

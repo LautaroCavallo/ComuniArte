@@ -6,6 +6,7 @@ import com.uade.tpo.marketplace.entity.neo4j.UsuarioNeo4j;
 import com.uade.tpo.marketplace.repository.neo4j.UsuarioNeo4jRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +22,8 @@ import java.util.stream.Collectors;
 public class NetworkService {
 
     private final UsuarioNeo4jRepository usuarioNeo4jRepository;
+    private final Neo4jClient neo4jClient;
+    private final LogService logService;
 
     /**
      * Un usuario comienza a seguir a otro creador
@@ -28,10 +31,21 @@ public class NetworkService {
     @Transactional
     public void followUser(String followerMongoId, String creatorMongoId) {
         log.info("Usuario {} sigue a {}", followerMongoId, creatorMongoId);
+        logService.logInfo("NEO4J", "NetworkService", "followUser", "FOLLOW_USER",
+            "Usuario siguiendo a creador", followerMongoId, creatorMongoId, null);
         
         // Buscar o crear nodos de usuarios en Neo4j
         UsuarioNeo4j follower = findOrCreateUsuarioNode(followerMongoId, "Usuario " + followerMongoId);
         UsuarioNeo4j creator = findOrCreateUsuarioNode(creatorMongoId, "Usuario " + creatorMongoId);
+        
+        // Verificar si la relación ya existe (evitar duplicados)
+        boolean yaExiste = follower.getSeguidos().stream()
+                .anyMatch(rel -> rel.getSeguido().getMongoUserId().equals(creatorMongoId));
+        
+        if (yaExiste) {
+            log.info("La relación SIGUE ya existe entre {} y {}", followerMongoId, creatorMongoId);
+            return; // No crear duplicado
+        }
         
         // Crear relación SIGUE
         SigueRelacion relacion = new SigueRelacion();
@@ -41,6 +55,8 @@ public class NetworkService {
         // Añadir la relación al set del seguidor y guardar
         follower.getSeguidos().add(relacion);
         usuarioNeo4jRepository.save(follower);
+        
+        logService.logNeo4jOperation("CREATE_RELATIONSHIP", followerMongoId, creatorMongoId, 0L, true);
         
         log.info("Relación SIGUE creada exitosamente");
     }
@@ -104,11 +120,45 @@ public class NetworkService {
     }
 
     /**
-     * Genera recomendaciones de creadores o contenidos según cercanía de red
-     * Algoritmo: Recomienda usuarios seguidos por los usuarios que yo sigo (amigos de amigos)
+     * Genera recomendaciones de contenidos según lo que les gusta a las personas que sigo
+     * Algoritmo: Recomienda contenidos que les gustan a usuarios que sigo, pero que yo no he marcado como "me gusta"
      */
-    public List<String> getRecommendations(String mongoUserId) {
-        log.info("Generando recomendaciones para usuario {}", mongoUserId);
+    public List<Map<String, Object>> getRecommendations(String mongoUserId) {
+        log.info("Generando recomendaciones de contenidos para usuario {}", mongoUserId);
+        
+        String query = 
+            "MATCH (yo:Usuario {mongoUserId: $userId})-[:SIGUE]->(seguido:Usuario)-[:GUSTA]->(c:Contenido) " +
+            "WHERE NOT (yo)-[:GUSTA]->(c) " +
+            "WITH c, count(*) AS popularidad " +
+            "RETURN c.contenidoId AS contentId, c.titulo AS titulo, popularidad " +
+            "ORDER BY popularidad DESC " +
+            "LIMIT 10";
+        
+        // Usar Neo4jClient para mapear manualmente
+        Collection<Map<String, Object>> results = neo4jClient
+            .query(query)
+            .bind(mongoUserId).to("userId")
+            .fetch()
+            .all()
+            .stream()
+            .map(record -> {
+                Map<String, Object> recommendation = new HashMap<>();
+                recommendation.put("contentId", record.get("contentId"));
+                recommendation.put("titulo", record.get("titulo"));
+                recommendation.put("popularidad", record.get("popularidad"));
+                return recommendation;
+            })
+            .collect(Collectors.toList());
+        
+        log.info("Se generaron {} recomendaciones de contenidos", results.size());
+        return new ArrayList<>(results);
+    }
+    
+    /**
+     * Genera recomendaciones de usuarios basadas en amigos de amigos
+     */
+    public List<String> getUserRecommendations(String mongoUserId) {
+        log.info("Generando recomendaciones de usuarios para {}", mongoUserId);
         
         // Obtener usuarios seguidos por el usuario actual
         List<UsuarioNeo4j> seguidos = usuarioNeo4jRepository.findSeguidos(mongoUserId);
@@ -119,17 +169,15 @@ public class NetworkService {
         // Obtener usuarios seguidos por cada uno de los seguidos (amigos de amigos)
         Set<String> recomendaciones = new HashSet<>();
         for (UsuarioNeo4j seguido : seguidos) {
-            // Usa el método correcto: getMongoUserId()
             List<UsuarioNeo4j> amigosDeAmigos = usuarioNeo4jRepository.findSeguidos(seguido.getMongoUserId());
             amigosDeAmigos.stream()
-                    // Usa el método correcto: getMongoUserId()
                     .map(UsuarioNeo4j::getMongoUserId)
                     .filter(id -> !id.equals(mongoUserId)) // Excluir al usuario actual
                     .filter(id -> !seguidosIds.contains(id)) // Excluir usuarios que ya sigo
                     .forEach(recomendaciones::add);
         }
         
-        log.info("Se generaron {} recomendaciones", recomendaciones.size());
+        log.info("Se generaron {} recomendaciones de usuarios", recomendaciones.size());
         return new ArrayList<>(recomendaciones);
     }
 
