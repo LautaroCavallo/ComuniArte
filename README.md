@@ -187,8 +187,8 @@ POST   /api/contents/{id}/comments # Comentar
 ### 👥 Gestión de Usuarios
 
 ```http
-POST   /api/users/register        # Registrar usuario
-POST   /api/users/login           # Iniciar sesión
+POST   /api/auth/register        # Registrar usuario
+POST   /api/auth/login           # Iniciar sesión
 GET    /api/users/{id}            # Ver perfil
 PUT    /api/users/{id}            # Actualizar perfil
 GET    /api/users/{id}/history    # Ver historial
@@ -360,12 +360,12 @@ Todos los endpoints (excepto `/register` y `/login`) requieren autenticación JW
 
 ```bash
 # 1. Registrar usuario
-curl -X POST http://localhost:8080/api/users/register \
+curl -X POST http://localhost:8080/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{"nombre":"Juan","email":"juan@mail.com","password":"pass123"}'
 
 # 2. Obtener token
-curl -X POST http://localhost:8080/api/users/login \
+curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"juan@mail.com","password":"pass123"}'
 
@@ -490,3 +490,4 @@ Desarrollado por estudiantes de Ingeniería en Informática - UADE
 <p align="center">
   Hecho con ❤️ para artistas independientes y comunidades culturales de América Latina
 </p>
+

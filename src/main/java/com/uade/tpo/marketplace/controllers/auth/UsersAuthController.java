@@ -11,7 +11,7 @@ import com.uade.tpo.marketplace.service.AuthenticationService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class UsersAuthController {
 

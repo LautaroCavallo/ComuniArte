@@ -51,7 +51,7 @@
               "raw": "{\n  \"nombre\": \"Demo Profesor\",\n  \"email\": \"profesor@uade.edu.ar\",\n  \"password\": \"demo123\",\n  \"region\": \"Argentina\",\n  \"tipoUsuario\": \"creador\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/users/register",
+              "raw": "{{base_url}}/api/auth/register",
               "host": ["{{base_url}}"],
               "path": ["api", "users", "register"]
             }
@@ -89,7 +89,7 @@
               "raw": "{\n  \"email\": \"profesor@uade.edu.ar\",\n  \"password\": \"demo123\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/users/login",
+              "raw": "{{base_url}}/api/auth/login",
               "host": ["{{base_url}}"],
               "path": ["api", "users", "login"]
             }
@@ -880,4 +880,5 @@
     }
   ]
 }
+
 
