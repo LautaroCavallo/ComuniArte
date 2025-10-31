@@ -6,6 +6,12 @@ import com.uade.tpo.marketplace.entity.mongodb.Contenido;
 import com.uade.tpo.marketplace.service.CommentService;
 import com.uade.tpo.marketplace.service.ContentService;
 import com.uade.tpo.marketplace.service.LikeService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -21,6 +27,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/contents")
 @RequiredArgsConstructor
+@Tag(name = "1. Gestión de Contenidos", description = "Endpoints para subir, listar, actualizar y eliminar contenidos (videos, audios, textos)")
 public class ContentController {
 
     private final ContentService contentService;
